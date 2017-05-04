@@ -1,0 +1,8 @@
+[package]
+name = "adafruit_pwm_servo_driver"
+version = "0.1.0"
+authors = ["ostrosco <ostrosco@fastmail.fm>"]
+
+[dependencies]
+sysfs_gpio = "0.5.0"
+i2cdev = "0.3.1"
