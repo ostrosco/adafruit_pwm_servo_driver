@@ -1,7 +1,7 @@
 extern crate i2cdev;
 
 use i2cdev::core::*;
-use i2cdev::linux::LinuxI2CDevice;
+use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
 use std::thread::sleep;
 use std::time;
 
@@ -31,62 +31,59 @@ const OUTDRV: u8 = 0x04;
 
 // Other constants.
 const SWRST: u8 = 0x06;
-const PATH: &'static str = "/dev/i2c-0";
 
 pub struct PCA9685 {
     device: LinuxI2CDevice,
 }
 
 impl PCA9685 {
-    pub fn new() -> Self {
-        let dev = LinuxI2CDevice::new(PATH, PCA9685_ADDRESS)
+    pub fn new(path: &str) -> Self {
+        let dev = LinuxI2CDevice::new(path, PCA9685_ADDRESS)
             .expect("Couldn't init I2C");
         PCA9685 { device: dev }
     }
 
-    pub fn init(&mut self) -> () {
-        self.device
-            .smbus_write_byte_data(MODE2, OUTDRV)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(MODE1, ALLCALL)
-            .unwrap();
+    pub fn init(&mut self) -> Result<(), LinuxI2CError> {
+        try!(self.device.smbus_write_byte_data(MODE2, OUTDRV));
+        try!(self.device.smbus_write_byte_data(MODE1, ALLCALL));
         sleep(time::Duration::from_millis(5));
 
-        let mode1 = self.device.smbus_read_byte_data(MODE1).unwrap();
+        let mode1 = try!(self.device.smbus_read_byte_data(MODE1));
         let mode1 = mode1 & !SLEEP;
-        self.device.smbus_write_byte_data(MODE1, mode1).unwrap();
+        try!(self.device.smbus_write_byte_data(MODE1, mode1));
         sleep(time::Duration::from_millis(5));
+        Ok(())
     }
 
-    pub fn set_pwm(&mut self, channel: u8, on: u16, off: u16) -> () {
-        self.device
-            .smbus_write_byte_data(LED0_ON_L + 4 * channel, (on & 0xFF) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(LED0_ON_H + 4 * channel, (on >> 8) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(LED0_OFF_L + 4 * channel,
-                                   (off & 0xFF) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(LED0_OFF_H + 4 * channel, (off >> 8) as u8)
-            .unwrap();
+    pub fn set_pwm(&mut self,
+                   channel: u8,
+                   on: u16,
+                   off: u16)
+                   -> Result<(), LinuxI2CError> {
+        try!(self.device
+                 .smbus_write_byte_data(LED0_ON_L + 4 * channel,
+                                        (on & 0xFF) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(LED0_ON_H + 4 * channel,
+                                        (on >> 8) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(LED0_OFF_L + 4 * channel,
+                                        (off & 0xFF) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(LED0_OFF_H + 4 * channel,
+                                        (off >> 8) as u8));
+        Ok(())
     }
 
-    pub fn set_all_pwm(&mut self, on: u16, off: u16) -> () {
-        self.device
-            .smbus_write_byte_data(ALL_LED_ON_L, (on & 0xFF) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(ALL_LED_ON_H, (on >> 8) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(ALL_LED_OFF_L, (off & 0xFF) as u8)
-            .unwrap();
-        self.device
-            .smbus_write_byte_data(ALL_LED_OFF_H, (off >> 8) as u8)
-            .unwrap();
+    pub fn set_all_pwm(&mut self, on: u16, off: u16) -> Result<(), LinuxI2CError> {
+        try!(self.device
+                 .smbus_write_byte_data(ALL_LED_ON_L, (on & 0xFF) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(ALL_LED_ON_H, (on >> 8) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(ALL_LED_OFF_L, (off & 0xFF) as u8));
+        try!(self.device
+                 .smbus_write_byte_data(ALL_LED_OFF_H, (off >> 8) as u8));
+        Ok(())
     }
 }
