@@ -37,10 +37,9 @@ pub struct PCA9685 {
 }
 
 impl PCA9685 {
-    pub fn new(path: &str) -> Self {
-        let dev = LinuxI2CDevice::new(path, PCA9685_ADDRESS)
-            .expect("Couldn't init I2C");
-        PCA9685 { device: dev }
+    pub fn new(path: &str) -> Result<Self, LinuxI2CError> {
+        let dev = try!(LinuxI2CDevice::new(path, PCA9685_ADDRESS));
+        Ok(PCA9685 { device: dev })
     }
 
     pub fn init(&mut self) -> Result<(), LinuxI2CError> {
